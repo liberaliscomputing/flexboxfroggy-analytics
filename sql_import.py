@@ -17,12 +17,15 @@ def sql_import(dname):
 		con = mdb.connect(host=os.environ['hostname'], \
 			user=os.environ['username'], \
 			passwd=os.environ['password'], \
-			db=os.environ['database'])
+			db=os.environ['database'], \
+			use_unicode=True, \
+			charset='utf8')
 		if con:
 			print 'Connected to MySQL database'
 		# get cursor
 		cur = con.cursor()
 		# load and import json
+		errcnt = 0
 		for fname in os.listdir(dname):
 			path = dname + fname
 			print 'Load %s' % fname
@@ -33,11 +36,11 @@ def sql_import(dname):
 					VALUES("%s", "%s", "%s", "%s", "%s", "%s")' % \
 					(k, v['user'], str(v['timeStamp']), v['levelName'], v['input'], v['result']))
 				con.commit()
-
-	except mdb.Error, e:
-		print 'Error %d: %s' % (e.args[0], e.args[1])
-		exit()
-
+			print 'Find %d error(s) in importing %s' % (err_cnt, fname)
+	except Exception as (errno, errstr):
+		errcnt += 1
+		print 'Error %d: %s' % (errno, errstr)
+		pass
 	finally:
 		if con:
 			print 'Close session'
