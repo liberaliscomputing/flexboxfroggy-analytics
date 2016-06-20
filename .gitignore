@@ -3,4 +3,5 @@ data/
 transactions.json
 get
 *.pyc
+*.bk
 
