@@ -1,49 +1,52 @@
 # -*- coding: utf-8 -*-
 
-import os
 from os.path import join, dirname
 from dotenv import load_dotenv
+import os
 import MySQLdb as mdb
-import simplejson as json
-
+import ujson as json
 
 def sql_import(dname):
 	try:
-		print 'Start processing'
+		print 'Start processing'	
 		# import environmental variables storing database credentials
 		dotenv_path = join(dirname(__file__), '.env')
 		load_dotenv(dotenv_path)
 		# connect to database
-		con = mdb.connect(host=os.environ['hostname'], \
-			user=os.environ['username'], \
-			passwd=os.environ['password'], \
-			db=os.environ['database'], \
-			use_unicode=True, \
-			charset='utf8')
+		con = (mdb.connect(host=os.environ['hostname'], 
+			user=os.environ['username'], 
+			passwd=os.environ['password'], 
+			db=os.environ['database'], 
+			use_unicode=True, charset='utf8mb4'))
 		if con:
-			print 'Connected to MySQL database'
+			print 'Connected to MySQL database'	
 		# get cursor
 		cur = con.cursor()
-		# load and import json
-		errcnt = 0
+		# load and import json	
 		for fname in os.listdir(dname):
-			path = dname + fname
 			print 'Load %s' % fname
-			imported_json = json.loads(open(path).read())
+			path = dname + fname	
+			loaded_json = json.loads(open(path).read())
 			print 'Import %s' % fname
-			for (k, v) in imported_json.items():
-				cur.execute('INSERT INTO log(transaction_key, user, timestamp, level_name, input, result) \
-					VALUES("%s", "%s", "%s", "%s", "%s", "%s")' % \
-					(k, v['user'], str(v['timeStamp']), v['levelName'], v['input'], v['result']))
-				con.commit()
-			print 'Find %d error(s) in importing %s' % (err_cnt, fname)
-	except Exception as (errno, errstr):
-		errcnt += 1
-		print 'Error %d: %s' % (errno, errstr)
-		pass
+			errcnt = 0
+			for (k, v) in loaded_json.items():
+				try:
+					query = ('INSERT INTO log(transaction_key, user, timestamp, level_name, changed, input, result)' + 
+						'VALUES("%s","%s", "%s", "%s", "%s", "%s", "%s")')
+					# replace endswith \\, ', and " for fewer exceptions
+					if v['input'].endswith('\\'):
+						v['input'] = v['input'].replace('\\','')
+					cur.execute((query % 
+						(k, v['user'], str(v['timeStamp']), v['levelName'], v['changed'], v['input'].replace("'","").replace('"',''), v['result'])))
+				except Exception as err:
+					errcnt += 1
+					print 'Error: %s in importing %s\n' % (err, v)
+					pass
+			con.commit()
+			print 'Find %d error(s) in importing %s\n' % (errcnt, fname)
 	finally:
 		if con:
-			print 'Close session'
+			print 'Close connection'
 			con.close()
 
 if __name__ == '__main__':

@@ -16,3 +16,4 @@ def merge_data(dname):
 if __name__ == '__main__':
 	dname = 'data/'
 	merge_data(dname)
+
