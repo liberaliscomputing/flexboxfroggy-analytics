@@ -34,10 +34,8 @@ def sql_import(dname):
 					query = ('INSERT INTO log(transaction_key, user, timestamp, level_name, changed, input, result)' + 
 						'VALUES("%s","%s", "%s", "%s", "%s", "%s", "%s")')
 					# replace endswith \\, ', and " for fewer exceptions
-					if v['input'].endswith('\\'):
-						v['input'] = v['input'].replace('\\','')
 					cur.execute((query % 
-						(k, v['user'], str(v['timeStamp']), v['levelName'], v['changed'], v['input'].replace("'","").replace('"',''), v['result'])))
+						(k, v['user'], str(v['timeStamp']), v['levelName'], v['changed'], v['input'], v['result'])))
 				except Exception as err:
 					errcnt += 1
 					print 'Error: %s in importing %s\n' % (err, v)
